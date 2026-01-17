@@ -11,6 +11,7 @@ from albumentations.pytorch import ToTensorV2
 import os
 import io
 import base64
+import gdown  # ADDED FOR GOOGLE DRIVE
 
 # ========== EXACT MODEL ARCHITECTURE FROM YOUR TRAINING ==========
 
@@ -201,55 +202,46 @@ BACKGROUND_COLORS = {
     "transparent": {"name": "Transparent", "color": None, "description": "For custom backgrounds"}
 }
 
-# ========== MODEL LOADING ==========
-
+# ========== MODEL LOADING FROM GOOGLE DRIVE ==========
 @st.cache_resource
-def load_model(model_path):
-    """Load the trained HybridU2Net model with comprehensive error handling"""
+def load_model():
+    """Load the trained HybridU2Net model from Google Drive (280MB)"""
     try:
-        # Check if file exists
-        if not os.path.exists(model_path):
-            return None, f"Model file not found at: {model_path}"
+        model_path = "best_model.pth"
         
-        # Create model with exact same configuration as training
+        # Download from YOUR Google Drive link if not exists
+        if not os.path.exists(model_path):
+            st.info("📥 Downloading AI model from Google Drive... (~280MB, 30-60s only once)")
+            gdown.download("https://drive.google.com/uc?id=1-mvaOvD7Hs_yM36ZCv52OvOBFy3gdnU1", 
+                          model_path, quiet=False)
+            st.success("✅ Model downloaded successfully!")
+        
+        # Create model with EXACT same configuration as training
         model = HybridU2Net(encoder_name='resnet34', pretrained=False, num_classes=1)
         
         # Load checkpoint
-        try:
-            checkpoint = torch.load(model_path, map_location='cpu')
-        except Exception as e:
-            return None, f"Error loading checkpoint file: {str(e)}"
+        checkpoint = torch.load(model_path, map_location='cpu')
         
         # Handle different checkpoint formats
         if isinstance(checkpoint, dict):
-            # Check what's in the checkpoint
             if 'model_state_dict' in checkpoint:
                 state_dict = checkpoint['model_state_dict']
-                epoch = checkpoint.get('epoch', 'unknown')
-                best_iou = checkpoint.get('best_iou', 'unknown')
-                st.success(f"✅ Loaded checkpoint from epoch {epoch}")
-                if best_iou != 'unknown':
-                    st.info(f"📊 Best IoU achieved during training: {best_iou:.4f}")
             elif 'state_dict' in checkpoint:
                 state_dict = checkpoint['state_dict']
             else:
-                # Assume the whole dict is the state dict
                 state_dict = checkpoint
         else:
-            # Direct state dict
             state_dict = checkpoint
         
-        # Load state dict with error handling
-        try:
-            missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
-        except Exception as e:
-            return None, f"Error loading state dict: {str(e)}"
-        
+        # Load state dict
+        missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
         model.eval()
+        
+        st.sidebar.success("✅ AI Model loaded from Google Drive!")
         return model, "success"
         
     except Exception as e:
-        return None, f"Unexpected error: {str(e)}"
+        return None, f"❌ Error loading model: {str(e)}"
 
 # ========== IMAGE PROCESSING FUNCTIONS ==========
 
@@ -383,26 +375,13 @@ def main():
     # Sidebar configuration
     st.sidebar.header("⚙️ Configuration")
     
-    # Model loading
-    model_path = st.sidebar.text_input(
-        "Model filename:",
-        value="best_model.pth",  # ← CHANGE TO YOUR MODEL FILENAME
-        help="Enter your .pth model filename"
-    )
-    
-    if not model_path:
-        st.error("Please enter a model file path.")
-        st.stop()
-    
-    # Load model
-    with st.spinner("Loading AI model..."):
-        model, load_status = load_model(model_path)
+    # Load model from Google Drive (REMOVED TEXT INPUT - AUTOMATIC)
+    with st.spinner("🚀 Loading AI model from Google Drive..."):
+        model, load_status = load_model()
     
     if model is None:
         st.error(f"❌ Model loading failed: {load_status}")
         st.stop()
-    else:
-        st.sidebar.success("✅ AI Model Ready!")
     
     # Passport size selection
     st.sidebar.subheader("📐 Passport Size")
