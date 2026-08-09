@@ -518,7 +518,7 @@ def process_image(uploaded_file, model, passport_size, bg_info, selected_bg_key,
     
     with col1:
         st.subheader("📷 Original Photo")
-        st.image(image, use_column_width=True)
+        st.image(image, use_container_width=True)
         st.info(f"📏 Size: {image_np.shape[1]}×{image_np.shape[0]} pixels")
         
         # Processing button with unique key
@@ -594,7 +594,7 @@ def process_image(uploaded_file, model, passport_size, bg_info, selected_bg_key,
                 file_format = "JPEG"
                 mime_type = "image/jpeg"
             
-            st.image(result_pil, use_column_width=True)
+            st.image(result_pil, use_container_width=True)
             
             # Image info
             dimensions = st.session_state.passport_size
@@ -670,7 +670,7 @@ def process_image(uploaded_file, model, passport_size, bg_info, selected_bg_key,
                 with col_mask:
                     if st.checkbox("Show AI Mask", key=f"show_mask_{source}"):
                         mask_display = (st.session_state.passport_mask * 255).astype(np.uint8)
-                        st.image(mask_display, caption="AI Segmentation Mask", use_column_width=True)
+                        st.image(mask_display, caption="AI Segmentation Mask", use_container_width=True)
                 
                 with col_specs:
                     st.write("**Photo Specifications:**")
